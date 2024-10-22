@@ -2,24 +2,19 @@ package main
 
 import (
 	"api_assignment/internal/models"
-	"api_assignment/pkg/utils"
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-)
 
-// Gin equivalent of the timeHandler
-func fetchProductsHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.IndentedJSON(http.StatusOK, utils.FetchProducts())
-	}
-}
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/google/uuid"
+)
 
 func createMongoClient(connectionString string) *mongo.Client {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
@@ -46,6 +41,42 @@ func CloseMongoConnection(client *mongo.Client) {
 	}()
 }
 
+type application struct {
+	VoteService interface {
+		All() ([]*models.Vote, error)
+		PostVote(newVote *models.Vote) (*models.PostResponse, error)
+		GetVotesByProductID(productID string) ([]*models.Vote, error)
+		GetAvergageVotesByProduct(sessionID string) (map[string]*models.VoteResult, error)
+	}
+}
+
+// Middleware to check and create a session if it doesn't exist
+func checkSession() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+
+		// Check if the session ID exists
+		sessionID := session.Get("session_id")
+		if sessionID == nil {
+			// If no session ID, create a new session
+			newSessionID := uuid.New().String()
+
+			// Set the session ID in the session data
+			session.Set("session_id", newSessionID)
+
+			// Save the session
+			session.Save()
+
+			fmt.Println("New session created with ID:", newSessionID)
+		} else {
+			fmt.Println("Existing session found with ID:", sessionID)
+		}
+
+		// Continue to the next middleware/handler
+		c.Next()
+	}
+}
+
 func main() {
 	//TODO move password to secrets
 	mongoPass := "gb9MPHOre4hGm5ph"
@@ -68,24 +99,14 @@ func main() {
 		fmt.Println(pr)
 	}
 
-	/*
-		_, err := collection.InsertMany(context.TODO(), productsAsInterfaces)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		indexModel := mongo.IndexModel{
-			Keys:    bson.D{{Key: "id", Value: 1}},
-			Options: options.Index().SetUnique(true),
-		}
-		name, err := collection.Indexes().CreateOne(context.TODO(), indexModel)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("Name of Index Created: " + name)
-	*/
-
 	router := gin.Default()
+
+	// Create a cookie store for session management
+	store := cookie.NewStore([]byte("secret-key"))
+	router.Use(sessions.Sessions("session_cookie", store))
+
+	// Use middleware to check/create session
+	router.Use(checkSession())
 
 	//Swagger endpoint
 	router.GET("/products", fetchProductsHandler())

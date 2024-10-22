@@ -4,6 +4,7 @@ package models
 // TODO
 
 type Product struct {
-	ID   string `json:"id" bson:"id"`
-	Name string `json:"name" bson:"name"`
+	GloballID string `json:"global_id" bson:"global_id"`
+	ID        string `json:"id" bson:"id"`
+	Name      string `json:"name" bson:"name"`
 }

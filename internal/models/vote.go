@@ -21,7 +21,7 @@ type Vote struct {
 }
 
 type PostResponse struct {
-	alreadyExist bool
+	AlreadyExist bool
 	Vote
 }
 
@@ -31,7 +31,7 @@ type VoteResult struct {
 	VotesCount int     `json:"votes_count"`
 }
 
-func (vModel *VoteModel) All() ([]Vote, error) {
+func (vModel *VoteModel) All() ([]*Vote, error) {
 
 	coll := vModel.DB.Database("foodji").Collection("Products")
 
@@ -40,7 +40,7 @@ func (vModel *VoteModel) All() ([]Vote, error) {
 		return nil, err
 	}
 
-	allVotes := make([]Vote, 0)
+	allVotes := make([]*Vote, 0)
 	if err := cur.All(context.TODO(), &allVotes); err != nil {
 		return nil, err
 	}
@@ -67,9 +67,9 @@ func (vModel *VoteModel) PostVote(newVote *Vote) (*PostResponse, error) {
 		return nil, err
 	}
 	if result.ModifiedCount > 0 {
-		return &PostResponse{alreadyExist: true, Vote: *newVote}, nil
+		return &PostResponse{AlreadyExist: true, Vote: *newVote}, nil
 	} else {
-		return &PostResponse{alreadyExist: false, Vote: *newVote}, nil
+		return &PostResponse{AlreadyExist: false, Vote: *newVote}, nil
 	}
 
 }
@@ -91,11 +91,11 @@ func (vModel *VoteModel) GetVotesBySessionID(sessionID string) ([]*Vote, error) 
 
 }
 
-func (vModel *VoteModel) GetVotesByProductID(sessionID string) ([]*Vote, error) {
+func (vModel *VoteModel) GetVotesByProductID(productID string) ([]*Vote, error) {
 
 	coll := vModel.DB.Database("foodji").Collection("Products")
 
-	filter := bson.D{{Key: "product_id", Value: sessionID}}
+	filter := bson.D{{Key: "product_id", Value: productID}}
 
 	var foundVotes []*Vote
 	cur, err := coll.Find(context.TODO(), filter)
