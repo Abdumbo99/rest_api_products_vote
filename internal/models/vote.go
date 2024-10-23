@@ -17,7 +17,7 @@ type VoteModel struct {
 type Vote struct {
 	Rate      int    `json:"rate" bson:"rate"`
 	SessionID string `json:"session_id" bson:"session_id"`
-	Product
+	ProductID string `json:"product_id" bson:"product_id"`
 }
 
 type PostResponse struct {
@@ -31,52 +31,60 @@ type VoteResult struct {
 	VotesCount int     `json:"votes_count"`
 }
 
-func (vModel *VoteModel) All() ([]*Vote, error) {
-
-	coll := vModel.DB.Database("foodji").Collection("Products")
+func (vModel VoteModel) AllProducts() ([]*Product, error) {
+	coll := vModel.DB.Database("trial").Collection("products")
 
 	cur, err := coll.Find(context.TODO(), bson.D{})
 	if err != nil {
 		return nil, err
 	}
+	allProducts := make([]*Product, 0)
+	if err := cur.All(context.TODO(), &allProducts); err != nil {
+		return nil, err
+	}
+	return allProducts, nil
 
+}
+
+func (vModel VoteModel) AllVotes() ([]*Vote, error) {
+	coll := vModel.DB.Database("trial").Collection("votes")
+
+	cur, err := coll.Find(context.TODO(), bson.D{})
+	if err != nil {
+		return nil, err
+	}
 	allVotes := make([]*Vote, 0)
 	if err := cur.All(context.TODO(), &allVotes); err != nil {
 		return nil, err
 	}
-
 	return allVotes, nil
 
 }
 
-func (vModel *VoteModel) PostVote(newVote *Vote) (*PostResponse, error) {
+func (vModel VoteModel) PostVote(newVote *Vote) (*PostResponse, error) {
 
-	coll := vModel.DB.Database("foodji").Collection("Products")
+	coll := vModel.DB.Database("trial").Collection("votes")
 
-	voteBson, err := bson.Marshal(newVote)
-	if err != nil {
-		return nil, err
-	}
-
-	filter := bson.D{{Key: "product_id", Value: newVote.Product.ID}, {Key: "session_id", Value: newVote.SessionID}}
-	update := bson.D{{Key: "$set", Value: voteBson}}
+	filter := bson.D{{Key: "product_id", Value: newVote.ProductID}, {Key: "session_id", Value: newVote.SessionID}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "product_id", Value: newVote.ProductID},
+		{Key: "session_id", Value: newVote.SessionID}, {Key: "rate", Value: newVote.Rate}}}}
 	opts := options.Update().SetUpsert(true)
 
 	result, err := coll.UpdateOne(context.TODO(), filter, update, opts)
 	if err != nil {
 		return nil, err
 	}
-	if result.ModifiedCount > 0 {
-		return &PostResponse{AlreadyExist: true, Vote: *newVote}, nil
-	} else {
+	if result.MatchedCount == 0 {
 		return &PostResponse{AlreadyExist: false, Vote: *newVote}, nil
+	} else {
+		return &PostResponse{AlreadyExist: true, Vote: *newVote}, nil
 	}
 
 }
 
-func (vModel *VoteModel) GetVotesBySessionID(sessionID string) ([]*Vote, error) {
+func (vModel VoteModel) GetVotesBySessionID(sessionID string) ([]*Vote, error) {
 
-	coll := vModel.DB.Database("foodji").Collection("Products")
+	coll := vModel.DB.Database("trial").Collection("votes")
 
 	filter := bson.D{{Key: "session_id", Value: sessionID}}
 
@@ -91,9 +99,9 @@ func (vModel *VoteModel) GetVotesBySessionID(sessionID string) ([]*Vote, error) 
 
 }
 
-func (vModel *VoteModel) GetVotesByProductID(productID string) ([]*Vote, error) {
+func (vModel VoteModel) GetVotesByProductID(productID string) ([]*Vote, error) {
 
-	coll := vModel.DB.Database("foodji").Collection("Products")
+	coll := vModel.DB.Database("trial").Collection("votes")
 
 	filter := bson.D{{Key: "product_id", Value: productID}}
 
@@ -102,15 +110,16 @@ func (vModel *VoteModel) GetVotesByProductID(productID string) ([]*Vote, error) 
 	if err != nil {
 		return nil, err
 	}
+
 	cur.All(context.TODO(), &foundVotes)
 
 	return foundVotes, nil
 
 }
 
-func (vModel *VoteModel) GetAvergageVotesByProduct(sessionID string) (map[string]*VoteResult, error) {
+func (vModel VoteModel) GetAvergageVotesForAllProducts() (map[string]*VoteResult, error) {
 
-	coll := vModel.DB.Database("foodji").Collection("Products")
+	coll := vModel.DB.Database("trial").Collection("votes")
 
 	filter := bson.D{{}}
 
@@ -123,11 +132,11 @@ func (vModel *VoteModel) GetAvergageVotesByProduct(sessionID string) (map[string
 
 	avgVotes := make(map[string]*VoteResult)
 	for _, vote := range foundVotes {
-		if _, ok := avgVotes[vote.Product.ID]; !ok {
-			avgVotes[vote.Product.ID] = &VoteResult{}
+		if _, ok := avgVotes[vote.ProductID]; !ok {
+			avgVotes[vote.ProductID] = &VoteResult{}
 		}
-		avgVotes[vote.Product.ID].sum += vote.Rate
-		avgVotes[vote.Product.ID].VotesCount++
+		avgVotes[vote.ProductID].sum += vote.Rate
+		avgVotes[vote.ProductID].VotesCount++
 	}
 
 	for prodID := range avgVotes {

@@ -2,8 +2,10 @@ package main
 
 import (
 	"api_assignment/internal/models"
+	"api_assignment/pkg/utils"
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 
@@ -41,20 +43,10 @@ func CloseMongoConnection(client *mongo.Client) {
 	}()
 }
 
-type application struct {
-	VoteService interface {
-		All() ([]*models.Vote, error)
-		PostVote(newVote *models.Vote) (*models.PostResponse, error)
-		GetVotesByProductID(productID string) ([]*models.Vote, error)
-		GetAvergageVotesByProduct(sessionID string) (map[string]*models.VoteResult, error)
-	}
-}
-
 // Middleware to check and create a session if it doesn't exist
 func checkSession() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
-
 		// Check if the session ID exists
 		sessionID := session.Get("session_id")
 		if sessionID == nil {
@@ -77,12 +69,43 @@ func checkSession() gin.HandlerFunc {
 	}
 }
 
+func hello() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "hello"})
+	}
+}
+
 func main() {
 	//TODO move password to secrets
 	mongoPass := "gb9MPHOre4hGm5ph"
 	connectionString := fmt.Sprintf("mongodb+srv://abdul:%s@cluster0.ewrnc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", mongoPass)
 	client := createMongoClient(connectionString)
-	collection := client.Database("foodji").Collection("Products")
+	prs := utils.FetchProducts()
+
+	productsAsInterfaces := make([]interface{}, 0)
+
+	for _, pr := range prs {
+		productsAsInterfaces = append(productsAsInterfaces, pr)
+	}
+
+	collection := client.Database("trial").Collection("products")
+
+	_, err := collection.InsertMany(context.TODO(), productsAsInterfaces)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	indexModel := mongo.IndexModel{
+		Keys:    bson.D{{Key: "id", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	}
+
+	name, err := collection.Indexes().CreateOne(context.TODO(), indexModel)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Name of Index Created: " + name)
+
 	products := make([]*models.Product, 0)
 
 	filter := bson.D{}
@@ -99,17 +122,26 @@ func main() {
 		fmt.Println(pr)
 	}
 
+	app := &application{
+		Products:    prs,
+		voteService: models.VoteModel{DB: client},
+	}
+
 	router := gin.Default()
 
-	// Create a cookie store for session management
-	store := cookie.NewStore([]byte("secret-key"))
+	store := cookie.NewStore([]byte("sessioon-secret-key"))
 	router.Use(sessions.Sessions("session_cookie", store))
 
-	// Use middleware to check/create session
 	router.Use(checkSession())
 
 	//Swagger endpoint
-	router.GET("/products", fetchProductsHandler())
+	router.GET("/products", app.AllProductsHandler())
+	router.GET("/votes", app.AllVotessHandler())
+	router.POST("/votes", app.PostVoteHandler())
+	router.GET("/votes/:id", app.GetVotesByProductIDHanlder())
+	router.GET("/sessions/:id", app.GetVotesBySessionIDHanlder())
+	router.GET("/products/avgs", app.GetAvergageVotesForAllProductsHanlder())
 
+	router.GET("/", hello())
 	router.Run(":8080")
 }
