@@ -90,5 +90,10 @@ func main() {
 	router.GET("/products/avgs", app.GetAverageVotesForAllProductsHandler())
 
 	router.GET("/", hello())
-	router.Run(":8080")
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	router.Run(":" + port)
 }
