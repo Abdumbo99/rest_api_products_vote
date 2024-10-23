@@ -7,43 +7,43 @@ import (
 
 // MockVoteService is a mock implementation of the voteService interface
 type MockVoteService struct {
-	mockAllVotes          []*vote.Vote
-	mockGetVotesBySession []*vote.Vote
-	mockGetVotesByProduct []*vote.Vote
+	mockAllVotes          []*vote.VoteResult
+	mockGetVotesBySession []*vote.VoteResult
+	mockGetVotesByProduct []*vote.VoteResult
 	mockPostVoteExists    *bool
-	mockAvgVotes          map[string]*vote.VoteResult
+	mockAvgVotes          map[string]*vote.ProductVote
 	mockError             error
 }
 
-func (m *MockVoteService) AllVotes() ([]*vote.Vote, error) {
+func (m *MockVoteService) AllVotes() ([]*vote.VoteResult, error) {
 	if m.mockError != nil {
 		return nil, m.mockError
 	}
 	return m.mockAllVotes, nil
 }
 
-func (m *MockVoteService) PostVote(newVote *vote.Vote) (*bool, error) {
+func (m *MockVoteService) PostVote(newVote *vote.VoteResult) (*bool, error) {
 	if m.mockError != nil {
 		return nil, m.mockError
 	}
 	return m.mockPostVoteExists, nil
 }
 
-func (m *MockVoteService) GetVotesBySessionID(sessionID string) ([]*vote.Vote, error) {
+func (m *MockVoteService) GetVotesBySessionID(sessionID string) ([]*vote.VoteResult, error) {
 	if m.mockError != nil {
 		return nil, m.mockError
 	}
 	return m.mockGetVotesBySession, nil
 }
 
-func (m *MockVoteService) GetVotesByProductID(productID string) ([]*vote.Vote, error) {
+func (m *MockVoteService) GetVotesByProductID(productID string) ([]*vote.VoteResult, error) {
 	if m.mockError != nil {
 		return nil, m.mockError
 	}
 	return m.mockGetVotesByProduct, nil
 }
 
-func (m *MockVoteService) GetAverageVotesForAllProducts(products map[string]*product.Product) (map[string]*vote.VoteResult, error) {
+func (m *MockVoteService) GetAverageVotesForAllProducts(products map[string]*product.Product) (map[string]*vote.ProductVote, error) {
 	if m.mockError != nil {
 		return nil, m.mockError
 	}

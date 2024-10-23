@@ -5,7 +5,11 @@ import (
 	"api_assignment/api/middleware"
 	"context"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 
 	"github.com/gin-gonic/gin"
 
@@ -33,14 +37,6 @@ func createMongoClient(connectionString string) *mongo.Client {
 	return client
 }
 
-func CloseMongoConnection(client *mongo.Client) {
-	defer func() {
-		if err := client.Disconnect(context.TODO()); err != nil {
-			panic(err)
-		}
-	}()
-}
-
 // @Summary Root endpoint
 // @Description Displays a simple hello message at the root.
 // @Tags default
@@ -54,10 +50,23 @@ func hello() gin.HandlerFunc {
 }
 
 func main() {
-	//TODO move password to secrets
-	mongoPass := "gb9MPHOre4hGm5ph"
-	connectionString := fmt.Sprintf("mongodb+srv://abdul:%s@cluster0.ewrnc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", mongoPass)
+	//read db auth info
+	err := godotenv.Load()
+	mongoPass := os.Getenv("MONGO_PASS")
+	mongoUser := os.Getenv("MONGO_USER")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	connectionString := fmt.Sprintf("mongodb+srv://%s:%s@cluster0.ewrnc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+		mongoUser, mongoPass)
 	client := createMongoClient(connectionString)
+
+	defer func() {
+		if err := client.Disconnect(context.TODO()); err != nil {
+			panic(err)
+		}
+	}()
 
 	app := handler.NewApp(client)
 
@@ -70,6 +79,7 @@ func main() {
 
 	router.Use(middleware.CheckSession())
 	router.Use(middleware.Log())
+	router.Use(middleware.CORSMiddleware())
 
 	// endpoints
 	router.GET("/products", app.AllProductsHandler())

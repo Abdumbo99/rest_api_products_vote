@@ -9,14 +9,14 @@ import (
 )
 
 // AllVotes fetched all votes from the db
-func (vModel VoteModel) AllVotes() ([]*Vote, error) {
+func (vModel VoteModel) AllVotes() ([]*VoteResult, error) {
 	coll := vModel.DB.Database("trial").Collection("votes")
 
 	cur, err := coll.Find(context.TODO(), bson.D{})
 	if err != nil {
 		return nil, err
 	}
-	allVotes := make([]*Vote, 0)
+	allVotes := make([]*VoteResult, 0)
 	if err := cur.All(context.TODO(), &allVotes); err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func (vModel VoteModel) AllVotes() ([]*Vote, error) {
 }
 
 // PostVote handles the repo side of the posting/updating of a vote
-func (vModel VoteModel) PostVote(newVote *Vote) (*bool, error) {
+func (vModel VoteModel) PostVote(newVote *VoteResult) (*bool, error) {
 
 	coll := vModel.DB.Database("trial").Collection("votes")
 
@@ -54,13 +54,13 @@ func (vModel VoteModel) PostVote(newVote *Vote) (*bool, error) {
 }
 
 // GetVotesBySessionID handles the db side of returning all votes with the specified session id
-func (vModel VoteModel) GetVotesBySessionID(sessionID string) ([]*Vote, error) {
+func (vModel VoteModel) GetVotesBySessionID(sessionID string) ([]*VoteResult, error) {
 
 	coll := vModel.DB.Database("trial").Collection("votes")
 
 	filter := bson.D{{Key: "session_id", Value: sessionID}}
 
-	var foundVotes []*Vote
+	var foundVotes []*VoteResult
 	cur, err := coll.Find(context.TODO(), filter)
 	if err != nil {
 		return nil, err
@@ -72,13 +72,13 @@ func (vModel VoteModel) GetVotesBySessionID(sessionID string) ([]*Vote, error) {
 }
 
 // GetVotesByProductID fetches all votes by the corresponding product id
-func (vModel VoteModel) GetVotesByProductID(productID string) ([]*Vote, error) {
+func (vModel VoteModel) GetVotesByProductID(productID string) ([]*VoteResult, error) {
 
 	coll := vModel.DB.Database("trial").Collection("votes")
 
 	filter := bson.D{{Key: "product_id", Value: productID}}
 
-	var foundVotes []*Vote
+	var foundVotes []*VoteResult
 	cur, err := coll.Find(context.TODO(), filter)
 	if err != nil {
 		return nil, err
@@ -91,14 +91,14 @@ func (vModel VoteModel) GetVotesByProductID(productID string) ([]*Vote, error) {
 }
 
 // GetAvergageVotesForAllProducts handles the actual logic of fetching votes and calculating avgs.
-func (vModel VoteModel) GetAverageVotesForAllProducts(products map[string]*product.Product) (map[string]*VoteResult, error) {
+func (vModel VoteModel) GetAverageVotesForAllProducts(products map[string]*product.Product) (map[string]*ProductVote, error) {
 
 	coll := vModel.DB.Database("trial").Collection("votes")
 
 	// fetch everything
 	filter := bson.D{{}}
 
-	var foundVotes []*Vote
+	var foundVotes []*VoteResult
 	cur, err := coll.Find(context.TODO(), filter)
 	if err != nil {
 		return nil, err
@@ -106,10 +106,10 @@ func (vModel VoteModel) GetAverageVotesForAllProducts(products map[string]*produ
 	cur.All(context.TODO(), &foundVotes)
 
 	// fill data from the quesry result
-	avgVotes := make(map[string]*VoteResult)
+	avgVotes := make(map[string]*ProductVote)
 	for _, vote := range foundVotes {
 		if _, ok := avgVotes[vote.ProductID]; !ok {
-			avgVotes[vote.ProductID] = &VoteResult{}
+			avgVotes[vote.ProductID] = &ProductVote{}
 		}
 		avgVotes[vote.ProductID].sum += vote.Rate
 		avgVotes[vote.ProductID].VotesCount++
@@ -123,7 +123,7 @@ func (vModel VoteModel) GetAverageVotesForAllProducts(products map[string]*produ
 	// fill products with no votes
 	for prodID := range products {
 		if _, ok := avgVotes[prodID]; !ok {
-			avgVotes[prodID] = &VoteResult{sum: 0, Avg: 0.0, VotesCount: 0}
+			avgVotes[prodID] = &ProductVote{sum: 0, Avg: 0.0, VotesCount: 0}
 
 		}
 	}

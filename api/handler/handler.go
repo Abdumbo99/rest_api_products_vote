@@ -12,34 +12,34 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// @title Voting API
+// @title Product Voting API
 // @version 1.0
 // @description API for voting on products in a session-based system.
 // @host localhost:8080
 // @BasePath /
 
-// application is the handler for the requests. Additionally, it holds the necessary field for the whole application
+// Application is the handler for the requests. Additionally, it holds the necessary field for the whole Application
 // this includes the voteService and the products.
 // Products are saved here to be used for request validation and to return them when /products is called
 // purpose of saving them here instead of db is becuase products do not change frequently and to reduce calls to db
-type application struct {
+type Application struct {
 	Products map[string]*product.Product
 
 	// interface for easier testing
 	voteService interface {
-		AllVotes() ([]*vote.Vote, error)
-		PostVote(newVote *vote.Vote) (*bool, error)
-		GetVotesBySessionID(sessionID string) ([]*vote.Vote, error)
-		GetVotesByProductID(productID string) ([]*vote.Vote, error)
-		GetAverageVotesForAllProducts(products map[string]*product.Product) (map[string]*vote.VoteResult, error)
+		AllVotes() ([]*vote.VoteResult, error)
+		PostVote(newVote *vote.VoteResult) (*bool, error)
+		GetVotesBySessionID(sessionID string) ([]*vote.VoteResult, error)
+		GetVotesByProductID(productID string) ([]*vote.VoteResult, error)
+		GetAverageVotesForAllProducts(products map[string]*product.Product) (map[string]*vote.ProductVote, error)
 	}
 }
 
 // NewApp creates an istancve of the application and assigns the client passed to it as its client
-func NewApp(client *mongo.Client) *application {
+func NewApp(client *mongo.Client) *Application {
 	prs := product.FetchProducts()
 
-	return &application{
+	return &Application{
 		Products:    prs,
 		voteService: vote.VoteModel{DB: client},
 	}
@@ -54,7 +54,7 @@ func NewApp(client *mongo.Client) *application {
 // @Success 200 {object} map[string]*product.Product
 // @Failure 204 {object} map[string]string
 // @Router /products [get]
-func (app *application) AllProductsHandler() gin.HandlerFunc {
+func (app *Application) AllProductsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		if len(app.Products) == 0 {
@@ -71,10 +71,10 @@ func (app *application) AllProductsHandler() gin.HandlerFunc {
 // @Tags votes
 // @Accept json
 // @Produce json
-// @Success 200 {array} vote.Vote
+// @Success 200 {array} vote.VoteResult
 // @Failure 500 {object} map[string]string
 // @Router /votes [get]
-func (app *application) AllVotessHandler() gin.HandlerFunc {
+func (app *Application) AllVotessHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		allVotes, err := app.voteService.AllVotes()
@@ -97,16 +97,16 @@ func (app *application) AllVotessHandler() gin.HandlerFunc {
 // @Tags votes
 // @Accept json
 // @Produce json
-// @Param vote body vote.Vote true "Vote to post or update"
+// @Param vote body vote.VoteResult true "Vote to post or update"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /votes [post
-func (app *application) PostVoteHandler() gin.HandlerFunc {
+// @Router /votes [post]
+func (app *Application) PostVoteHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		newVote := &vote.Vote{}
+		newVote := &vote.VoteResult{}
 		if err := c.ShouldBindJSON(newVote); err != nil {
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "request is invalid. Please check your request"})
 			fmt.Fprintln(os.Stderr, err.Error())
@@ -152,10 +152,10 @@ func (app *application) PostVoteHandler() gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path string true "Session ID"
-// @Success 200 {array} vote.Vote
+// @Success 200 {array} vote.VoteResult
 // @Failure 500 {object} map[string]string
 // @Router /votes/session/{id} [get]
-func (app *application) GetVotesBySessionIDHandler() gin.HandlerFunc {
+func (app *Application) GetVotesBySessionIDHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		sessionID := c.Param("id")
@@ -182,11 +182,11 @@ func (app *application) GetVotesBySessionIDHandler() gin.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param id path string true "Product ID"
-// @Success 200 {array} vote.Vote
+// @Success 200 {array} vote.VoteResult
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /votes/product/{id} [get]
-func (app *application) GetVotesByProductIDHandler() gin.HandlerFunc {
+func (app *Application) GetVotesByProductIDHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		productID := c.Param("id")
@@ -220,7 +220,7 @@ func (app *application) GetVotesByProductIDHandler() gin.HandlerFunc {
 // @Success 200 {object} map[string]vote.VoteResult
 // @Failure 500 {object} map[string]string
 // @Router /products/avgs [get]
-func (app *application) GetAverageVotesForAllProductsHandler() gin.HandlerFunc {
+func (app *Application) GetAverageVotesForAllProductsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		avgs, err := app.voteService.GetAverageVotesForAllProducts(app.Products)

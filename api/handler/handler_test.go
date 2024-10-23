@@ -17,7 +17,7 @@ import (
 )
 
 // setupRouter sets up test router
-func setupRouter(app *application) *gin.Engine {
+func setupRouter(app *Application) *gin.Engine {
 	router := gin.Default()
 
 	// Use the session middleware with a mock cookie store
@@ -40,7 +40,7 @@ func TestAllProductsHandler(t *testing.T) {
 	products := map[string]*product.Product{
 		"p1": {ID: "p1", Name: "Product 1", GloballID: "g1"},
 	}
-	app := &application{
+	app := &Application{
 		Products:    products,
 		voteService: &MockVoteService{},
 	}
@@ -71,10 +71,10 @@ func TestAllProductsHandler(t *testing.T) {
 func TestAllVotessHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	mockVotes := []*vote.Vote{
+	mockVotes := []*vote.VoteResult{
 		{ProductID: "p1", SessionID: "s1", Rate: 8},
 	}
-	app := &application{
+	app := &Application{
 		voteService: &MockVoteService{
 			mockAllVotes: mockVotes,
 		},
@@ -88,7 +88,7 @@ func TestAllVotessHandler(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var respVotes []*vote.Vote
+	var respVotes []*vote.VoteResult
 	err := json.Unmarshal(w.Body.Bytes(), &respVotes)
 	assert.NoError(t, err)
 	assert.Equal(t, mockVotes, respVotes)
@@ -106,7 +106,7 @@ func TestAllVotessHandler(t *testing.T) {
 func TestPostVoteHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	app := &application{
+	app := &Application{
 		Products: map[string]*product.Product{
 			"p1": {ID: "p1", Name: "Product 1", GloballID: "g1"},
 		},
@@ -156,10 +156,10 @@ func TestPostVoteHandler(t *testing.T) {
 func TestGetVotesBySessionIDHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	mockVotes := []*vote.Vote{
+	mockVotes := []*vote.VoteResult{
 		{ProductID: "p1", SessionID: "s1", Rate: 8},
 	}
-	app := &application{
+	app := &Application{
 		voteService: &MockVoteService{
 			mockGetVotesBySession: mockVotes,
 		},
@@ -173,7 +173,7 @@ func TestGetVotesBySessionIDHandler(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var respVotes []*vote.Vote
+	var respVotes []*vote.VoteResult
 	err := json.Unmarshal(w.Body.Bytes(), &respVotes)
 	assert.NoError(t, err)
 	assert.Equal(t, mockVotes, respVotes)
@@ -191,10 +191,10 @@ func TestGetVotesBySessionIDHandler(t *testing.T) {
 func TestGetVotesByProductIDHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	mockVotes := []*vote.Vote{
+	mockVotes := []*vote.VoteResult{
 		{ProductID: "p1", SessionID: "s1", Rate: 8},
 	}
-	app := &application{
+	app := &Application{
 		Products: map[string]*product.Product{
 			"p1": {ID: "p1", Name: "Product 1", GloballID: "g1"},
 		},
@@ -211,7 +211,7 @@ func TestGetVotesByProductIDHandler(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var respVotes []*vote.Vote
+	var respVotes []*vote.VoteResult
 	err := json.Unmarshal(w.Body.Bytes(), &respVotes)
 	assert.NoError(t, err)
 	assert.Equal(t, mockVotes, respVotes)
@@ -228,10 +228,10 @@ func TestGetVotesByProductIDHandler(t *testing.T) {
 func TestGetAverageVotesForAllProductsHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	mockAvgVotes := map[string]*vote.VoteResult{
+	mockAvgVotes := map[string]*vote.ProductVote{
 		"p1": {VotesCount: 2, Avg: 7.5},
 	}
-	app := &application{
+	app := &Application{
 		Products: map[string]*product.Product{
 			"p1": {ID: "p1", Name: "Product 1", GloballID: "g1"},
 		},
@@ -248,7 +248,7 @@ func TestGetAverageVotesForAllProductsHandler(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var respAvgVotes map[string]*vote.VoteResult
+	var respAvgVotes map[string]*vote.ProductVote
 	err := json.Unmarshal(w.Body.Bytes(), &respAvgVotes)
 	assert.NoError(t, err)
 	assert.Equal(t, mockAvgVotes, respAvgVotes)
