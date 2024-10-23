@@ -54,12 +54,15 @@ func main() {
 	err := godotenv.Load()
 	mongoPass := os.Getenv("MONGO_PASS")
 	mongoUser := os.Getenv("MONGO_USER")
+	mongoHost := os.Getenv("MONGO_HOST")
+	mongoParams := os.Getenv("MONGO_PARAMS")
+
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	connectionString := fmt.Sprintf("mongodb+srv://%s:%s@cluster0.ewrnc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-		mongoUser, mongoPass)
+	connectionString := fmt.Sprintf("mongodb+srv://%s:%s@%s/%s",
+		mongoUser, mongoPass, mongoHost, mongoParams)
 	client := createMongoClient(connectionString)
 
 	defer func() {
