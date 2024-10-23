@@ -26,10 +26,9 @@ func createMongoClient(connectionString string) *mongo.Client {
 	}
 
 	// Send a ping to confirm a successful connection
-	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Err(); err != nil {
+	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
 		panic(err)
 	}
-	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
 	return client
 }
 
@@ -57,12 +56,14 @@ func main() {
 
 	router := gin.Default()
 
+	// setup the cookie and use it
 	store := cookie.NewStore([]byte("sessioon-secret-key"))
 	router.Use(sessions.Sessions("session_cookie", store))
 
 	router.Use(middleware.CheckSession())
+	router.Use(middleware.Log())
 
-	//Swagger endpoint
+	// endpoints
 	router.GET("/products", app.AllProductsHandler())
 	router.GET("/votes", app.AllVotessHandler())
 	router.POST("/votes", app.PostVoteHandler())

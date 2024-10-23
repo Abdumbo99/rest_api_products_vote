@@ -8,11 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type PostResponse struct {
-	AlreadyExist bool
-	Vote
-}
-
+// AllVotes fetched all votes from the db
 func (vModel VoteModel) AllVotes() ([]*Vote, error) {
 	coll := vModel.DB.Database("trial").Collection("votes")
 
@@ -28,27 +24,36 @@ func (vModel VoteModel) AllVotes() ([]*Vote, error) {
 
 }
 
-func (vModel VoteModel) PostVote(newVote *Vote) (*PostResponse, error) {
+// PostVote handles the repo side of the posting/updating of a vote
+func (vModel VoteModel) PostVote(newVote *Vote) (*bool, error) {
 
 	coll := vModel.DB.Database("trial").Collection("votes")
 
+	// create the search filter
 	filter := bson.D{{Key: "product_id", Value: newVote.ProductID}, {Key: "session_id", Value: newVote.SessionID}}
+	// update fields
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "product_id", Value: newVote.ProductID},
 		{Key: "session_id", Value: newVote.SessionID}, {Key: "rate", Value: newVote.Rate}}}}
+	// upsert; insert or update if exists
 	opts := options.Update().SetUpsert(true)
 
 	result, err := coll.UpdateOne(context.TODO(), filter, update, opts)
 	if err != nil {
 		return nil, err
 	}
+
+	// nothing matched; completely new
 	if result.MatchedCount == 0 {
-		return &PostResponse{AlreadyExist: false, Vote: *newVote}, nil
+		alreadyExist := false
+		return &alreadyExist, nil
 	} else {
-		return &PostResponse{AlreadyExist: true, Vote: *newVote}, nil
+		alreadyExist := true
+		return &alreadyExist, nil
 	}
 
 }
 
+// GetVotesBySessionID handles the db side of returning all votes with the specified session id
 func (vModel VoteModel) GetVotesBySessionID(sessionID string) ([]*Vote, error) {
 
 	coll := vModel.DB.Database("trial").Collection("votes")
@@ -66,6 +71,7 @@ func (vModel VoteModel) GetVotesBySessionID(sessionID string) ([]*Vote, error) {
 
 }
 
+// GetVotesByProductID fetches all votes by the corresponding product id
 func (vModel VoteModel) GetVotesByProductID(productID string) ([]*Vote, error) {
 
 	coll := vModel.DB.Database("trial").Collection("votes")
@@ -84,10 +90,12 @@ func (vModel VoteModel) GetVotesByProductID(productID string) ([]*Vote, error) {
 
 }
 
+// GetAvergageVotesForAllProducts handles the actual logic of fetching votes and calculating avgs.
 func (vModel VoteModel) GetAvergageVotesForAllProducts(products map[string]*product.Product) (map[string]*VoteResult, error) {
 
 	coll := vModel.DB.Database("trial").Collection("votes")
 
+	// fetch everything
 	filter := bson.D{{}}
 
 	var foundVotes []*Vote
@@ -97,6 +105,7 @@ func (vModel VoteModel) GetAvergageVotesForAllProducts(products map[string]*prod
 	}
 	cur.All(context.TODO(), &foundVotes)
 
+	// fill data from the quesry result
 	avgVotes := make(map[string]*VoteResult)
 	for _, vote := range foundVotes {
 		if _, ok := avgVotes[vote.ProductID]; !ok {
@@ -106,10 +115,12 @@ func (vModel VoteModel) GetAvergageVotesForAllProducts(products map[string]*prod
 		avgVotes[vote.ProductID].VotesCount++
 	}
 
+	// calculate the avg
 	for prodID := range avgVotes {
 		avgVotes[prodID].Avg = float64(avgVotes[prodID].sum) / float64(avgVotes[prodID].VotesCount)
 	}
 
+	// fill products with no votes
 	for prodID := range products {
 		if _, ok := avgVotes[prodID]; !ok {
 			avgVotes[prodID] = &VoteResult{sum: 0, Avg: 0.0, VotesCount: 0}

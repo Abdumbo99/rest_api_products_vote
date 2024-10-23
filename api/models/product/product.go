@@ -8,22 +8,21 @@ import (
 	"strconv"
 )
 
-// Ticket holds the details of a ticket
-// TODO
-
+// Product is simple struct that represents a product with its field, like ids, and name
 type Product struct {
 	GloballID string `json:"global_id" bson:"global_id"`
 	ID        string `json:"id" bson:"id"`
 	Name      string `json:"name" bson:"name"`
 }
 
+// FetchProducts calls the endpoint and return the products from there
 func FetchProducts() map[string]*Product {
 
 	fmt.Println("Fetching products...")
 	// TODO add retries
-	const link = "https://amperoid.tenants.foodji.io/machines/4bf115ee-303a-4089-a3ea-f6e7aae0ab94"
+	const endpoint = "https://amperoid.tenants.foodji.io/machines/4bf115ee-303a-4089-a3ea-f6e7aae0ab94"
 
-	resp, err := http.Get(link)
+	resp, err := http.Get(endpoint)
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +32,7 @@ func FetchProducts() map[string]*Product {
 		panic(err)
 	}
 
-	// create the slice to hold products
+	// holder of products
 	products := make(map[string]*Product)
 
 	rawDataMap := make(map[string]any)
@@ -42,6 +41,7 @@ func FetchProducts() map[string]*Product {
 	// ugly parsing to the products
 	productsRawData := rawDataMap["data"].(map[string]any)["machineProducts"].([]any)
 
+	// save products
 	for i, el := range productsRawData {
 		element := el.(map[string]any)
 		globalID := element["id"].(string)
