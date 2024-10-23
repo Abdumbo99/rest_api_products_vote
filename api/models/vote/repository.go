@@ -91,7 +91,7 @@ func (vModel VoteModel) GetVotesByProductID(productID string) ([]*Vote, error) {
 }
 
 // GetAvergageVotesForAllProducts handles the actual logic of fetching votes and calculating avgs.
-func (vModel VoteModel) GetAvergageVotesForAllProducts(products map[string]*product.Product) (map[string]*VoteResult, error) {
+func (vModel VoteModel) GetAverageVotesForAllProducts(products map[string]*product.Product) (map[string]*VoteResult, error) {
 
 	coll := vModel.DB.Database("trial").Collection("votes")
 

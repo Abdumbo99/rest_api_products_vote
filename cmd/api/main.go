@@ -1,6 +1,7 @@
 package main
 
 import (
+	"api_assignment/api/handler"
 	"api_assignment/api/middleware"
 	"context"
 	"fmt"
@@ -40,6 +41,12 @@ func CloseMongoConnection(client *mongo.Client) {
 	}()
 }
 
+// @Summary Root endpoint
+// @Description Displays a simple hello message at the root.
+// @Tags default
+// @Produce plain
+// @Success 200 {string} string "Hello message"
+// @Router / [get]
 func hello() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.IndentedJSON(http.StatusOK, gin.H{"message": "hello"})
@@ -52,9 +59,10 @@ func main() {
 	connectionString := fmt.Sprintf("mongodb+srv://abdul:%s@cluster0.ewrnc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", mongoPass)
 	client := createMongoClient(connectionString)
 
-	app := NewApp(client)
+	app := handler.NewApp(client)
 
 	router := gin.Default()
+	gin.SetMode(gin.DebugMode)
 
 	// setup the cookie and use it
 	store := cookie.NewStore([]byte("sessioon-secret-key"))
@@ -67,9 +75,9 @@ func main() {
 	router.GET("/products", app.AllProductsHandler())
 	router.GET("/votes", app.AllVotessHandler())
 	router.POST("/votes", app.PostVoteHandler())
-	router.GET("/votes/:id", app.GetVotesByProductIDHanlder())
-	router.GET("/sessions/:id", app.GetVotesBySessionIDHanlder())
-	router.GET("/products/avgs", app.GetAvergageVotesForAllProductsHanlder())
+	router.GET("/votes/product/:id", app.GetVotesByProductIDHandler())
+	router.GET("/votes/session/:id", app.GetVotesBySessionIDHandler())
+	router.GET("/products/avgs", app.GetAverageVotesForAllProductsHandler())
 
 	router.GET("/", hello())
 	router.Run(":8080")

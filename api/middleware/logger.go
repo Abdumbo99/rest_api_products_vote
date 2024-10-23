@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CheckSession is a middleware function to create logs for each request
 func Log() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Start timer
