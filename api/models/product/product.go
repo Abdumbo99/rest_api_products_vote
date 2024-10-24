@@ -19,7 +19,6 @@ type Product struct {
 func FetchProducts() map[string]*Product {
 
 	fmt.Println("Fetching products...")
-	// TODO add retries
 	const endpoint = "https://amperoid.tenants.foodji.io/machines/4bf115ee-303a-4089-a3ea-f6e7aae0ab94"
 
 	resp, err := http.Get(endpoint)
