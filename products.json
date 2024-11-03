@@ -1,0 +1,85 @@
+[
+     {
+        "id": "0",
+        "name": "Brodericks Brownie"
+    },
+     {
+        "id": "1",
+        "name": "Lemonade Schweppes"
+    },
+     {
+        "id": "2",
+        "name": "Red Bull"
+    },
+     {
+        "id": "3",
+        "name": "Clif Bar Coconut Chocolate Chip"
+    },
+     {
+        "id": "4",
+        "name": "Orange Juice Tropicanna"
+    },
+     {
+        "id": "5",
+        "name": "Kinder Chocolate"
+    },
+     {
+        "id": "6",
+        "name": "Protein Milk"
+    },
+     {
+        "id": "7",
+        "name": "Coca-Cola Zero"
+    },      {
+        "id": "8",
+        "name": "Nestlé Nescafé"
+    },
+     {
+        "id": "9",
+        "name": "Cheese Potato Chips Ruffles"
+    },
+     {
+        "id": "10",
+        "name": "Ketchup Potato Chips Ruffles"
+    },
+     {
+        "id": "11",
+        "name": "Chilli Potato Chips Ruffles"
+    },
+     {
+        "id": "12",
+        "name": "Oreo Chocolate Milka"
+    },
+     {
+        "id": "13",
+        "name": "Strawberry Chocolate Milka"
+    },
+     {
+        "id": "14",
+        "name": "Wholenut Chocolate Milka"
+    },
+     {
+        "id": "15",
+        "name": "Gatorade Zero Thirst Quencher"
+    }, 
+    {
+        "id": "16",
+        "name": "Gatorade G2 Lower Sugar"
+    },
+     {
+        "id": "17",
+        "name": "Voss Water 0.5L"
+    },
+     {
+        "id": "18",
+        "name": "Fiji Water 0.5L"
+    },
+     {
+        "id": "19",
+        "name": "Mentos Gum Sugar-Free"
+    },
+     {
+        "id": "20",
+        "name": "Wrigley's 5 Blueberry Rush Gum"
+    }
+]
