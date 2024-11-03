@@ -38,7 +38,7 @@ func TestAllProductsHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	products := map[string]*product.Product{
-		"p1": {ID: "p1", Name: "Product 1", GloballID: "g1"},
+		"p1": {ID: "p1", Name: "Product 1"},
 	}
 	app := &Application{
 		Products:    products,
@@ -108,7 +108,7 @@ func TestPostVoteHandler(t *testing.T) {
 
 	app := &Application{
 		Products: map[string]*product.Product{
-			"p1": {ID: "p1", Name: "Product 1", GloballID: "g1"},
+			"p1": {ID: "p1", Name: "Product 1"},
 		},
 		voteService: &MockVoteService{
 			mockPostVoteExists: func() *bool { v := false; return &v }(),
@@ -196,7 +196,7 @@ func TestGetVotesByProductIDHandler(t *testing.T) {
 	}
 	app := &Application{
 		Products: map[string]*product.Product{
-			"p1": {ID: "p1", Name: "Product 1", GloballID: "g1"},
+			"p1": {ID: "p1", Name: "Product 1"},
 		},
 		voteService: &MockVoteService{
 			mockGetVotesByProduct: mockVotes,
@@ -233,7 +233,7 @@ func TestGetAverageVotesForAllProductsHandler(t *testing.T) {
 	}
 	app := &Application{
 		Products: map[string]*product.Product{
-			"p1": {ID: "p1", Name: "Product 1", GloballID: "g1"},
+			"p1": {ID: "p1", Name: "Product 1"},
 		},
 		voteService: &MockVoteService{
 			mockAvgVotes: mockAvgVotes,

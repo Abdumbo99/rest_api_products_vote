@@ -15,7 +15,7 @@ import (
 // @title Product Voting API
 // @version 1.0
 // @description API for voting on products in a session-based system.
-// @host localhost:8080
+// @host :8080
 // @BasePath /
 
 // Application is the handler for the requests. Additionally, it holds the necessary field for the whole Application
@@ -37,8 +37,10 @@ type Application struct {
 
 // NewApp creates an istancve of the application and assigns the client passed to it as its client
 func NewApp(client *mongo.Client) *Application {
-	prs := product.FetchProducts()
-
+	prs, err := product.FetchProducts(client)
+	if err != nil {
+		panic(err)
+	}
 	return &Application{
 		Products:    prs,
 		voteService: vote.VoteModel{DB: client},
