@@ -77,7 +77,7 @@ func main() {
 	gin.SetMode(gin.DebugMode)
 
 	// setup the cookie and use it
-	store := cookie.NewStore([]byte("sessioon-secret-key"))
+	store := cookie.NewStore([]byte("sessioon-key"))
 	router.Use(sessions.Sessions("session_cookie", store))
 
 	router.Use(middleware.CheckSession())
