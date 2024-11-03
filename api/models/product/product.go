@@ -1,58 +1,85 @@
 package product
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strconv"
+	"os"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Product is simple struct that represents a product with its field, like ids, and name
 type Product struct {
-	GloballID string `json:"global_id" bson:"global_id"`
-	ID        string `json:"id" bson:"id"`
-	Name      string `json:"name" bson:"name"`
+	ID   string `json:"id" bson:"id"`
+	Name string `json:"name" bson:"name"`
 }
 
-// FetchProducts calls the endpoint and return the products from there
-func FetchProducts() map[string]*Product {
-
-	fmt.Println("Fetching products...")
-	const endpoint = "https://amperoid.tenants.foodji.io/machines/4bf115ee-303a-4089-a3ea-f6e7aae0ab94"
-
-	resp, err := http.Get(endpoint)
+func AddProductsToDB(DB *mongo.Client) (map[string]*Product, error) {
+	// Open the JSON file
+	file, err := os.Open("products.json")
 	if err != nil {
-		panic(err)
+		fmt.Println("Error opening file:", err)
+		return nil, err
 	}
+	defer file.Close() // Ensure the file is closed after reading
 
-	body, err := io.ReadAll(resp.Body)
+	var products []*Product
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&products)
 	if err != nil {
-		panic(err)
+		fmt.Println("Error decoding JSON:", err)
+		return nil, err
 	}
 
-	// holder of products
-	products := make(map[string]*Product)
-
-	rawDataMap := make(map[string]any)
-	json.Unmarshal(body, &rawDataMap)
-
-	// ugly parsing to the products
-	productsRawData := rawDataMap["data"].(map[string]any)["machineProducts"].([]any)
-
-	// save products
-	for i, el := range productsRawData {
-		element := el.(map[string]any)
-		globalID := element["id"].(string)
-		name := element["name"].(string)
-		localID := strconv.Itoa(i)
-		products[localID] = &Product{GloballID: globalID, ID: localID, Name: name}
-	}
-
-	fmt.Println("Fetched the following products:")
 	for _, pr := range products {
 		fmt.Printf("%+v\n", pr)
 	}
 
-	return products
+	coll := DB.Database("trial").Collection("products")
+
+	productsInterface := make([]interface{}, len(products))
+	for i, pr := range products {
+		productsInterface[i] = pr
+	}
+	_, err = coll.InsertMany(context.TODO(), productsInterface)
+
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+
+}
+
+// FetchProducts calls the endpoint and return the products from there
+func FetchProducts(DB *mongo.Client) (map[string]*Product, error) {
+
+	coll := DB.Database("trial").Collection("products")
+
+	// fetch everything
+	filter := bson.D{{}}
+
+	var foundProducts []*Product
+	cur, err := coll.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	cur.All(context.TODO(), &foundProducts)
+
+	// holder of products
+	products := make(map[string]*Product)
+
+	// save products
+	for _, product := range foundProducts {
+		products[product.ID] = product
+	}
+
+	fmt.Println("Fetched the following products:")
+	for id, pr := range products {
+		fmt.Printf("%s : %+v\n", id, pr)
+	}
+
+	return products, nil
 }
